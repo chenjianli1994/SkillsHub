@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+Thumbs.db
+
+# 本目录是原始来源包，项目级可用包已复制到 skills/。
+需求规格书工作流skill包/

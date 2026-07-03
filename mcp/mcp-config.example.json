@@ -1,0 +1,43 @@
+{
+  "mcpServers": {
+    "enterprise-docs": {
+      "enabled": false,
+      "description": "企业文档库示例，可用于读取制度、产品说明、接口文档和历史需求。",
+      "transport": "stdio",
+      "command": "enterprise-docs-mcp",
+      "args": ["--workspace", "${ENTERPRISE_DOCS_WORKSPACE}"],
+      "env": {
+        "ENTERPRISE_DOCS_TOKEN": "${ENTERPRISE_DOCS_TOKEN}"
+      }
+    },
+    "business-database": {
+      "enabled": false,
+      "description": "业务数据库示例，可用于查询业务字典、枚举值、字段含义和数据样例。",
+      "transport": "stdio",
+      "command": "database-mcp",
+      "args": ["--dsn", "${BUSINESS_DATABASE_DSN}"],
+      "env": {
+        "BUSINESS_DATABASE_DSN": "${BUSINESS_DATABASE_DSN}"
+      }
+    },
+    "search-service": {
+      "enabled": false,
+      "description": "搜索服务示例，可用于跨文档检索业务资料和历史决策。",
+      "transport": "http",
+      "url": "${SEARCH_SERVICE_MCP_URL}",
+      "headers": {
+        "Authorization": "Bearer ${SEARCH_SERVICE_TOKEN}"
+      }
+    },
+    "requirement-management": {
+      "enabled": false,
+      "description": "需求管理系统示例，可用于读取需求条目、缺陷、版本计划和验收记录。",
+      "transport": "stdio",
+      "command": "requirement-management-mcp",
+      "args": ["--project", "${REQUIREMENT_PROJECT_KEY}"],
+      "env": {
+        "REQUIREMENT_MANAGEMENT_TOKEN": "${REQUIREMENT_MANAGEMENT_TOKEN}"
+      }
+    }
+  }
+}
