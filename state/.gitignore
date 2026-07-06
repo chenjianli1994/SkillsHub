@@ -1,0 +1,6 @@
+*
+!.gitignore
+!README.md
+!structured/
+structured/*
+!structured/README.md

@@ -4,10 +4,10 @@
 
 - 本项目只使用项目内 skills，路径为 `skills/`，不要安装到全局 skills 目录。
 - 本项目用于沉淀覆盖软件开发前期流程的项目级 Skills 包，包括需求分析、需求整理、需求拆解、代码分析、软件方案设计、详细设计、策略描述、质量检查和文档导出。
-- 工作流必须支持全流程模式、阶段直达模式和代码驱动模式。
+- 工作流必须支持全流程模式、阶段直达模式、代码驱动模式和参考文档驱动模式。
 - 文档内容和文件名尽量使用中文。
-- 默认输出 Markdown；结构化中间产物使用 JSON。
-- 用户可见的实际业务交付物统一放到 `outputs/`。
+- 默认输出 Markdown；结构化中间产物使用 JSON，并统一放到 `state/`。
+- 用户可见的实际业务交付物统一放到 `outputs/`，不要把工作流状态、画像、阶段 JSON 等中间产物放入 `outputs/`。
 - Skills 包自身的建设方案、设计说明、产物契约、迭代计划统一放到 `docs/`，不要放到 `outputs/`。
 
 ## 目录职责
@@ -19,6 +19,7 @@
 | `knowledge/` | 存放本地业务知识、术语、需求规范、设计规范、架构原则、编码规范、测试规范 |
 | `mcp/` | 存放 MCP 示例配置，后续接入企业文档库、数据库、搜索服务、需求管理系统等 |
 | `scripts/` | 存放项目级辅助脚本，例如知识库初始化、检索、Agent 包校验 |
+| `state/` | 存放 Agent 内部工作流状态、结构化 JSON、参考文档画像等中间产物 |
 | `outputs/` | 只存放通过 skills 生成的实际项目交付物 |
 
 ## 工作流入口
@@ -30,6 +31,7 @@
 - 后续完整软件交付工作流默认入口为 `skills/software-delivery-orchestrator/SKILL.md`。
 - 当 `software-delivery-orchestrator` 尚未建立时，按 `docs/软件开发全流程Skills包建设方案.md` 中的阶段设计执行和扩展。
 - 不强制所有任务都从需求分析开始；用户可以直接进入代码分析、软件设计、策略文档、质量检查或导出阶段。
+- 用户可以不使用项目内固定模板，而是提供一份参考文档；此时应先解析参考文档画像，再进入目标阶段。
 
 软件开发全流程阶段：
 
@@ -60,9 +62,26 @@
 | `codebase-only` | 只分析当前代码结构和实现现状 |
 | `design-from-code` | 基于当前代码生成软件方案或详细设计 |
 | `strategy-from-code` | 基于当前代码生成策略描述文档 |
+| `reference-doc-driven` | 基于用户提供的参考文档结构、风格或格式生成内容 |
+| `design-from-code-with-reference` | 基于当前代码生成设计文档，同时参考用户提供的文档 |
+| `strategy-from-reference` | 参考用户提供的策略文档生成新策略文档 |
+| `requirement-from-reference` | 参考用户提供的需求文档生成新需求文档 |
+| `export-with-reference-style` | 导出 Word/DOCX 时参考用户提供的文档格式或样式 |
 | `task-plan-from-design` | 基于已有设计生成开发任务计划 |
 | `quality-only` | 只检查已有阶段产物质量 |
 | `export-only` | 只导出 Word/DOCX 或 PDF |
+
+### 参考文档驱动
+
+- 当用户提供参考文档作为样例、模板、格式参考或内容参考时，按参考文档驱动模式处理。
+- 参考文档驱动模式应优先使用 `skills/reference-document-profiler/SKILL.md`。如果该 skill 尚未建立，应按 `docs/软件开发全流程Skills包建设方案.md` 中的参考文档画像规则执行。
+- 参考文档不能直接等同于项目模板；必须先判断参考用途：结构参考、内容参考、格式参考或综合参考。
+- 参考文档画像应输出到 `state/参考文档结构画像.md` 和 `state/reference-document-profile.json`。
+- 后续阶段 skill 应读取 `state/reference-document-profile.json`，按参考文档画像生成目标内容。
+- 只要求参考结构时，不得复用参考文档原文内容。
+- 只要求参考格式时，不得把参考文档旧项目内容带入新文档。
+- 允许内容参考时，必须标记来源，并进入质量门禁检查。
+- 参考文档中的项目名称、人员姓名、客户信息、日期、历史数据默认属于禁止复用项，除非用户明确要求保留。
 
 ### 需求规格书工作流
 
@@ -84,15 +103,15 @@
 - 后续阶段不得只依赖对话上下文，应优先读取上一阶段的 Markdown 和 JSON 产物。
 - 阶段直达模式可以只生成目标阶段必要产物，但必须记录入口类型、跳过阶段和缺失前置材料。
 - 代码驱动模式的产物必须保留代码依据、推断依据和待确认项。
-- 阶段产物默认放入 `outputs/`。
-- 结构化中间产物建议放入 `outputs/structured/`。
+- 参考文档驱动模式的产物必须保留参考文档路径、参考用途、允许复用范围和禁止复用项。
+- 用户需要评审或交付的阶段 Markdown 产物默认放入 `outputs/`。
+- 工作流状态、结构化 JSON、参考文档画像等中间产物放入 `state/` 或 `state/structured/`。
 - 导出的 Word/DOCX 或 PDF 建议放入 `outputs/exported/`。
 
 建议产物命名：
 
 ```text
 outputs/
-├── 00_工作流状态.json
 ├── 01_需求分析报告.md
 ├── 02_需求规格书.md
 ├── 03_需求拆解清单.md
@@ -102,8 +121,13 @@ outputs/
 ├── 07_策略描述文档.md
 ├── 08_开发任务计划.md
 ├── 09_质量检查报告.md
-├── structured/
 └── exported/
+
+state/
+├── 工作流状态.json
+├── 参考文档结构画像.md
+├── reference-document-profile.json
+└── structured/
 ```
 
 ## 导出规则
@@ -112,6 +136,7 @@ outputs/
 - 只有用户明确要求 Word/DOCX 时，才使用对应 document exporter。
 - 需求规格书 Word/DOCX 必须通过结构化 JSON 和 `skills/requirement-document-exporter/templates/需求规格书Word模板_美化版.docx` 直出。
 - 不允许使用 Markdown 转 Word 作为需求规格书 Word 交付路径。
+- 用户要求参考某份 Word/DOCX 格式导出时，应先生成参考文档画像，再决定是否提取或复用样式；不得直接把参考文档正文内容污染到新文档。
 - 只有用户明确要求 PDF 时，才调用 PDF 导出脚本。
 
 ## 本地知识库
@@ -141,7 +166,7 @@ knowledge/
 - MCP 配置和示例放在 `mcp/`。
 - 当前仅提供示例配置，不包含真实凭据。
 - 后续可接入企业文档库、数据库、搜索服务、需求管理系统、缺陷管理系统、代码仓库检索服务等。
-- 接入 MCP 后，仍应先使用项目内 `knowledge/`、`outputs/` 和 `skills/`，再按需查询外部系统。
+- 接入 MCP 后，仍应先使用项目内 `knowledge/`、`state/`、`outputs/` 和 `skills/`，再按需查询外部系统。
 - MCP 返回内容必须标记来源，不得无来源地覆盖项目内明确规则。
 
 ## 项目级辅助脚本
@@ -154,9 +179,11 @@ knowledge/
 
 - 新增或修改 skills 包自身设计文档时，放入 `docs/`。
 - 新增业务产物、需求文档、设计文档、策略文档、导出文档时，放入 `outputs/`。
+- 新增工作流状态、阶段 JSON、参考文档画像等内部衔接产物时，放入 `state/`。
 - 新增阶段 skill 时，应包含 `SKILL.md`，并按需要包含 `templates/`、`scripts/`、`references/`。
 - 每个 skill 应只做一个清晰环节，不要把全流程能力塞入单一 skill。
 - 每个阶段 skill 应声明是否支持阶段直达、是否支持代码驱动模式、缺少前置材料时如何处理。
+- 每个可能生成文档的阶段 skill 应声明是否支持参考文档驱动模式，以及如何消费 `state/reference-document-profile.json`。
 - 总工作流 skill 负责编排、检查前置产物、更新状态、调用阶段 skill，不直接替代所有阶段 skill。
 - 质量检查应作为横切环节，不要只依赖各阶段自检。
 

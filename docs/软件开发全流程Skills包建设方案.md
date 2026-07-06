@@ -16,6 +16,7 @@
 - 开发任务计划
 - 质量检查
 - Word/PDF 导出
+- 参考文档解析与参考文档驱动生成
 
 本包仍保持项目级使用，不安装到全局 skills。所有业务知识、流程规范、模板、脚本和输出都应在项目内闭环。
 
@@ -29,6 +30,7 @@ skills/
 ├── requirement-analysis-report/
 ├── requirement-specification-writer/
 ├── requirement-decomposition-planner/
+├── reference-document-profiler/
 ├── codebase-analysis-reporter/
 ├── solution-architecture-designer/
 ├── detailed-design-writer/
@@ -45,8 +47,10 @@ skills/
 - 每个阶段都有明确输入、处理动作、输出产物和质量检查点。
 - 工作流不是一条死流水线，必须支持从任意阶段插入执行。
 - 当没有需求输入但有代码仓库时，支持以现有代码为事实来源反向生成软件设计文档和策略描述文档。
+- 当用户提供参考文档而不使用固定模板时，必须先解析参考文档画像，再让目标阶段 skill 按画像生成内容。
 - Markdown 用于人类评审，结构化 JSON 用于后续阶段衔接。
-- 输出统一进入 `outputs/`，但 Skills 包建设方案、设计说明和开发文档放入 `docs/`。
+- 用户可见交付物统一进入 `outputs/`；工作流状态、结构化 JSON、参考文档画像等内部中间产物统一进入 `state/`。
+- Skills 包建设方案、设计说明和开发文档放入 `docs/`。
 - 导出 Word/DOCX 或 PDF 只在用户明确要求时执行。
 
 ## 3. 目录规划
@@ -64,6 +68,7 @@ skills/
 ├── requirement-analysis-report/
 ├── requirement-specification-writer/
 ├── requirement-decomposition-planner/
+├── reference-document-profiler/
 ├── codebase-analysis-reporter/
 ├── solution-architecture-designer/
 ├── detailed-design-writer/
@@ -83,8 +88,10 @@ knowledge/
 └── 索引.json
 mcp/
 scripts/
-outputs/
+state/
 ├── structured/
+└── README.md
+outputs/
 └── exported/
 ```
 
@@ -97,7 +104,8 @@ outputs/
 | `knowledge/` | 存放本地业务知识、规范、术语、架构原则和测试规范 |
 | `mcp/` | 存放 MCP 示例和后续外部系统接入配置 |
 | `scripts/` | 存放项目级辅助脚本，例如校验、检索、初始化 |
-| `outputs/` | 只存放通过 skills 生成的实际项目交付物 |
+| `state/` | 存放 Agent 内部工作流状态、结构化 JSON、参考文档画像等中间产物 |
+| `outputs/` | 只存放通过 skills 生成的实际项目交付物，不存放内部 JSON |
 
 ## 4. 工作流阶段总览
 
@@ -105,7 +113,7 @@ outputs/
 
 | 阶段 | 阶段名称 | 主要 skill | 核心产物 |
 | --- | --- | --- | --- |
-| 0 | 工作流初始化 | `software-delivery-orchestrator` | `00_工作流状态.json` |
+| 0 | 工作流初始化 | `software-delivery-orchestrator` | `state/工作流状态.json` |
 | 1 | 需求分析 | `requirement-analysis-report` | `01_需求分析报告.md` |
 | 2 | 需求整理 | `requirement-specification-writer` | `02_需求规格书.md` |
 | 3 | 需求拆解 | `requirement-decomposition-planner` | `03_需求拆解清单.md` |
@@ -118,7 +126,7 @@ outputs/
 
 ## 5. 工作流入口模式
 
-本 Skills 包必须同时支持“全流程模式”和“阶段直达模式”。
+本 Skills 包必须同时支持“全流程模式”“阶段直达模式”“代码驱动模式”和“参考文档驱动模式”。
 
 ### 5.1 全流程模式
 
@@ -156,6 +164,11 @@ outputs/
 | `codebase-only` | 只分析当前代码结构和实现现状 | 0 -> 4 -> 9 |
 | `design-from-code` | 没有需求输入，直接基于当前代码输出软件设计文档 | 0 -> 4 -> 5 -> 6 -> 9 |
 | `strategy-from-code` | 基于当前代码中的规则、策略、算法、控制逻辑输出策略文档 | 0 -> 4 -> 7 -> 9 |
+| `reference-doc-driven` | 用户提供参考文档，要求按参考文档结构、风格或格式生成内容 | 0 -> 参考文档画像 -> 目标阶段 -> 9 |
+| `design-from-code-with-reference` | 基于当前代码生成设计文档，同时参考用户提供的文档结构或格式 | 0 -> 参考文档画像 -> 4 -> 5 -> 6 -> 9 |
+| `strategy-from-reference` | 参考用户提供的策略文档生成新策略文档 | 0 -> 参考文档画像 -> 7 -> 9 |
+| `requirement-from-reference` | 参考用户提供的需求文档生成新需求文档 | 0 -> 参考文档画像 -> 1 -> 2 -> 9 |
+| `export-with-reference-style` | 导出 Word/DOCX 时参考用户提供的文档格式或样式 | 0 -> 参考文档画像 -> 导出 |
 | `task-plan-from-design` | 基于已有设计文档生成开发任务计划 | 0 -> 8 -> 9 |
 | `quality-only` | 只检查已有阶段产物质量 | 0 -> 9 |
 | `export-only` | 只导出 Word/DOCX 或 PDF | 0 -> 导出 |
@@ -167,6 +180,8 @@ outputs/
 - “只分析这个仓库的架构”
 - “基于已有设计文档拆开发任务”
 - “只把这份规格书导出成 Word”
+- “参考这份 Word 文档格式，基于当前代码生成软件详细设计文档”
+- “参考这份策略文档，重新生成一个新项目的策略描述文档”
 
 ### 5.3 代码驱动模式
 
@@ -205,23 +220,122 @@ outputs/
 
 ```text
 outputs/
-├── 00_工作流状态.json
 ├── 04_现有代码分析报告.md
 ├── 05_当前软件方案说明.md
 ├── 06_当前软件详细设计说明书.md
 ├── 07_当前策略描述文档.md
 └── 09_质量检查报告.md
+
+state/
+├── 工作流状态.json
+└── structured/
 ```
 
 对应结构化产物：
 
 ```text
-outputs/structured/
+state/structured/
 ├── codebase-analysis.json
 ├── current-solution-design.json
 ├── current-detailed-design.json
 └── current-strategy-document.json
 ```
+
+### 5.4 参考文档驱动模式
+
+当用户不使用项目内固定模板，而是直接提供一份参考文档作为样例时，工作流进入参考文档驱动模式。
+
+参考文档驱动模式的关键不是简单模仿，而是先把参考文档解析成“文档画像”，再把画像作为目标阶段 skill 的输入。
+
+```text
+参考文档
+-> reference-document-profiler 提取文档画像
+-> 目标阶段 skill 生成内容
+-> quality-gate 检查结构、风格、内容边界
+```
+
+建议新增 skill：
+
+```text
+skills/reference-document-profiler/
+├── SKILL.md
+├── templates/
+├── scripts/
+└── references/
+```
+
+`reference-document-profiler` 负责：
+
+- 识别参考文档类型：需求规格书、详细设计、策略文档、测试方案、汇报材料等。
+- 提取章节结构：一级标题、二级标题、固定章节、可选章节。
+- 提取内容组织方式：先背景后方案、先现状后问题、先策略后验证等。
+- 提取表格结构：表头、字段、是否必须出现。
+- 提取编号规则：章节编号、需求编号、功能编号、策略编号。
+- 提取写作风格：正式评审、技术说明、业务说明、策略说明。
+- 提取术语和表达习惯。
+- 识别必须保留的固定栏目。
+- 识别不应复用的内容，例如具体项目名、人员名、客户名、日期、历史数据。
+
+输出产物：
+
+```text
+state/参考文档结构画像.md
+state/reference-document-profile.json
+```
+
+建议 JSON 结构：
+
+```json
+{
+  "参考文档路径": "",
+  "文档类型": "",
+  "参考用途": "结构参考",
+  "允许复用内容": false,
+  "允许复用格式": true,
+  "允许复用术语": true,
+  "章节结构": [],
+  "表格结构": [],
+  "编号规则": [],
+  "写作风格": [],
+  "固定栏目": [],
+  "禁止复用项": ["项目名称", "人员姓名", "日期", "客户信息"],
+  "待确认项": []
+}
+```
+
+参考用途必须明确区分：
+
+| 参考用途 | 处理方式 |
+| --- | --- |
+| 结构参考 | 只提取章节、表格、编号、栏目组织，不复用原文内容 |
+| 内容参考 | 允许提炼业务规则、术语、策略逻辑，但必须标记来源 |
+| 格式参考 | 允许提取 Word 样式、版式、标题层级、表格样式 |
+| 综合参考 | 同时参考结构、内容和格式，但必须明确禁止复用项 |
+
+典型执行路径：
+
+```text
+参考 Word 文档 + 当前代码
+-> reference-document-profiler
+-> codebase-analysis-reporter
+-> detailed-design-writer
+-> software-quality-gate
+```
+
+```text
+参考策略文档 + 新策略输入
+-> reference-document-profiler
+-> strategy-document-writer
+-> software-quality-gate
+```
+
+质量要求：
+
+- 不得把参考文档中的旧项目名称、人员、客户、日期直接带入新文档。
+- 不得把参考文档中的历史业务事实当成当前项目事实。
+- 若用户只要求参考结构，不得复用原文内容。
+- 若用户要求参考格式，Word/DOCX 输出应优先走结构化 JSON + Word 模板/样式生成，而不是 Markdown 转 Word。
+- 生成结果应能说明参考了哪些结构、哪些风格、哪些内容来源。
 
 ## 6. 阶段 0：工作流初始化
 
@@ -236,6 +350,7 @@ outputs/structured/
 ### 输入
 
 - 用户原始需求
+- 用户提供的参考文档
 - 已有需求文档或会议记录
 - `knowledge/` 中的业务规则、术语、需求规范
 - 当前代码仓库路径
@@ -243,9 +358,10 @@ outputs/structured/
 
 ### 要完成的内容
 
-- 判断本次任务是全流程执行、阶段直达执行，还是代码驱动执行。
-- 识别入口类型，例如 `full-flow`、`design-from-code`、`strategy-from-code`、`quality-only`、`export-only`。
-- 建立或更新 `outputs/00_工作流状态.json`。
+- 判断本次任务是全流程执行、阶段直达执行、代码驱动执行，还是参考文档驱动执行。
+- 识别入口类型，例如 `full-flow`、`design-from-code`、`strategy-from-code`、`reference-doc-driven`、`design-from-code-with-reference`、`quality-only`、`export-only`。
+- 若用户提供参考文档，先调用或规划调用 `reference-document-profiler` 生成参考文档画像。
+- 建立或更新 `state/工作流状态.json`。
 - 确认需要读取哪些知识库文件。
 - 确认后续阶段的执行顺序。
 - 记录每个阶段的输入、输出、状态和阻塞项。
@@ -253,7 +369,7 @@ outputs/structured/
 ### 输出
 
 ```text
-outputs/00_工作流状态.json
+state/工作流状态.json
 ```
 
 建议字段：
@@ -278,6 +394,7 @@ outputs/00_工作流状态.json
 - 是否知道从哪个阶段开始。
 - 阶段直达时是否具备该阶段最小输入。
 - 代码驱动时是否已确认代码仓库路径和分析范围。
+- 参考文档驱动时是否明确参考用途：结构参考、内容参考、格式参考或综合参考。
 - 是否存在必须先让用户确认的歧义。
 
 ## 7. 阶段 1：需求分析
@@ -293,6 +410,7 @@ outputs/00_工作流状态.json
 ### 输入
 
 - 用户原始描述
+- 参考文档画像，若用户要求按参考文档结构整理需求
 - 原始需求文档
 - 会议纪要
 - 业务规则
@@ -313,7 +431,7 @@ outputs/00_工作流状态.json
 
 ```text
 outputs/01_需求分析报告.md
-outputs/structured/requirement-analysis.json
+state/structured/requirement-analysis.json
 ```
 
 ### 质量检查点
@@ -339,6 +457,7 @@ outputs/structured/requirement-analysis.json
 - `requirement-analysis.json`
 - 用户确认记录
 - `knowledge/需求规范.md`
+- 参考文档画像，若用户要求按参考文档结构生成规格书
 
 ### 要完成的内容
 
@@ -357,7 +476,7 @@ outputs/structured/requirement-analysis.json
 
 ```text
 outputs/02_需求规格书.md
-outputs/structured/requirement-specification.json
+state/structured/requirement-specification.json
 ```
 
 ### 质量检查点
@@ -398,7 +517,7 @@ outputs/structured/requirement-specification.json
 
 ```text
 outputs/03_需求拆解清单.md
-outputs/structured/requirement-breakdown.json
+state/structured/requirement-breakdown.json
 ```
 
 ### 质量检查点
@@ -440,7 +559,7 @@ outputs/structured/requirement-breakdown.json
 
 ```text
 outputs/04_现有代码分析报告.md
-outputs/structured/codebase-analysis.json
+state/structured/codebase-analysis.json
 ```
 
 ### 质量检查点
@@ -469,6 +588,7 @@ outputs/structured/codebase-analysis.json
 - `codebase-analysis.json`
 - `knowledge/架构原则.md`
 - `knowledge/设计规范.md`
+- 参考文档画像，若用户要求按参考文档结构输出方案
 
 ### 要完成的内容
 
@@ -486,7 +606,7 @@ outputs/structured/codebase-analysis.json
 
 ```text
 outputs/05_软件方案设计.md
-outputs/structured/solution-design.json
+state/structured/solution-design.json
 ```
 
 ### 质量检查点
@@ -514,6 +634,7 @@ outputs/structured/solution-design.json
 - `solution-design.json`
 - 代码分析报告
 - 需求规格书
+- 参考文档画像，若用户要求按参考文档结构或格式输出详细设计
 
 ### 要完成的内容
 
@@ -530,7 +651,7 @@ outputs/structured/solution-design.json
 
 ```text
 outputs/06_软件详细设计说明书.md
-outputs/structured/detailed-design.json
+state/structured/detailed-design.json
 ```
 
 ### 质量检查点
@@ -558,6 +679,7 @@ outputs/structured/detailed-design.json
 - 软件方案设计
 - 详细设计说明书
 - 策略样本文档
+- 参考文档画像
 - 业务规则
 - 代码驱动模式下的条件判断、状态机、规则配置、算法逻辑、控制逻辑相关代码
 
@@ -575,7 +697,7 @@ outputs/structured/detailed-design.json
 
 ```text
 outputs/07_策略描述文档.md
-outputs/structured/strategy-document.json
+state/structured/strategy-document.json
 ```
 
 ### 质量检查点
@@ -616,7 +738,7 @@ outputs/structured/strategy-document.json
 
 ```text
 outputs/08_开发任务计划.md
-outputs/structured/implementation-plan.json
+state/structured/implementation-plan.json
 ```
 
 ### 质量检查点
@@ -643,6 +765,7 @@ outputs/structured/implementation-plan.json
 - 所有阶段产物
 - 结构化 JSON
 - 文档模板
+- 参考文档画像
 - 用户指定导出格式
 
 ### 要完成的内容
@@ -652,6 +775,7 @@ outputs/structured/implementation-plan.json
 - 检查是否存在遗漏、冲突、不可实现、不可验收内容。
 - 阶段直达模式下，检查当前阶段产物是否满足其最小质量标准，不强行要求全流程前置产物存在。
 - 代码驱动模式下，检查代码事实、合理推断和待确认项是否清晰分离。
+- 参考文档驱动模式下，检查输出是否遵守参考用途和禁止复用项。
 - 生成质量检查报告。
 - 用户明确要求 Word/DOCX 时，通过结构化 JSON 和 Word 模板直出。
 - 用户明确要求 PDF 时，再执行 PDF 导出。
@@ -671,6 +795,7 @@ outputs/exported/
 - 是否存在无法落地的任务。
 - 阶段直达时，缺失前置材料是否已在报告中说明。
 - 代码驱动时，是否避免把推断写成确定业务规则。
+- 参考文档驱动时，是否避免污染旧项目内容。
 - 是否只在用户明确要求时导出 Word/PDF。
 
 ## 16. 阶段产物契约
@@ -679,7 +804,6 @@ outputs/exported/
 
 ```text
 outputs/
-├── 00_工作流状态.json
 ├── 01_需求分析报告.md
 ├── 02_需求规格书.md
 ├── 03_需求拆解清单.md
@@ -689,27 +813,33 @@ outputs/
 ├── 07_策略描述文档.md
 ├── 08_开发任务计划.md
 ├── 09_质量检查报告.md
-├── structured/
-│   ├── requirement-analysis.json
-│   ├── requirement-specification.json
-│   ├── requirement-breakdown.json
-│   ├── codebase-analysis.json
-│   ├── solution-design.json
-│   ├── detailed-design.json
-│   ├── strategy-document.json
-│   └── implementation-plan.json
 └── exported/
+
+state/
+├── 工作流状态.json
+├── 参考文档结构画像.md
+├── reference-document-profile.json
+└── structured/
+    ├── requirement-analysis.json
+    ├── requirement-specification.json
+    ├── requirement-breakdown.json
+    ├── codebase-analysis.json
+    ├── solution-design.json
+    ├── detailed-design.json
+    ├── strategy-document.json
+    └── implementation-plan.json
 ```
 
 契约原则：
 
-- Markdown 是评审产物。
-- JSON 是流程衔接产物。
+- Markdown 是评审产物，放入 `outputs/`。
+- JSON 是流程衔接产物，放入 `state/`。
 - 后续阶段不得只依赖自然语言上下文，应优先读取前一阶段 JSON。
 - 每个 JSON 都必须保留来源、编号、状态、风险和待确认项。
 - 任何阶段发现前置产物不足，应更新工作流状态，而不是编造缺失信息。
-- 阶段直达模式可以只生成目标阶段必要产物，但必须在 `00_工作流状态.json` 中记录入口类型和跳过原因。
+- 阶段直达模式可以只生成目标阶段必要产物，但必须在 `state/工作流状态.json` 中记录入口类型和跳过原因。
 - 代码驱动模式的 JSON 必须保留代码依据、推断依据和待确认项。
+- 参考文档驱动模式的 JSON 必须保留参考文档路径、参考用途、允许复用范围和禁止复用项。
 
 ## 17. 总工作流 Skill 职责
 
@@ -720,11 +850,12 @@ outputs/
 - 读取 `AGENTS.md`。
 - 读取 `knowledge/索引.json`。
 - 判断用户请求属于哪个阶段。
-- 判断入口类型是全流程、阶段直达、代码驱动、质量检查还是导出。
+- 判断入口类型是全流程、阶段直达、代码驱动、参考文档驱动、质量检查还是导出。
 - 检查前置产物是否存在。
 - 检查阶段直达模式下的最小输入是否满足。
+- 检查参考文档驱动模式下是否已有 `state/reference-document-profile.json`，没有则先调用 `reference-document-profiler`。
 - 调用对应阶段 skill。
-- 更新 `outputs/00_工作流状态.json`。
+- 更新 `state/工作流状态.json`。
 - 在关键节点调用质量门禁。
 - 在用户明确要求时调用导出 skill。
 
@@ -757,6 +888,7 @@ skill-name/
 - 需要读取的模板和参考文件
 - 是否支持阶段直达
 - 是否支持代码驱动模式
+- 是否支持参考文档驱动模式
 - 缺少前置材料时的处理方式
 
 `templates/` 应包含：
@@ -787,6 +919,7 @@ skill-name/
 4. `solution-architecture-designer`
 5. `detailed-design-writer`
 6. `software-quality-gate`
+7. `reference-document-profiler`
 
 第一批建设时必须同步支持以下入口：
 
@@ -795,6 +928,9 @@ skill-name/
 3. `design-from-code`
 4. `strategy-from-code`
 5. `quality-only`
+6. `reference-doc-driven`
+7. `design-from-code-with-reference`
+8. `strategy-from-reference`
 
 第二批增强工程落地：
 
@@ -845,6 +981,8 @@ MCP 不应该替代项目内 skills，而是作为外部事实来源。
 - 工作流能从任意阶段直接进入。
 - 没有需求输入时，能够基于当前代码生成代码分析、软件设计文档和策略描述文档。
 - 代码驱动产物能区分确定事实、合理推断和待确认项。
+- 用户提供参考文档时，能够先生成参考文档画像，再按参考文档结构、风格或格式生成目标文档。
+- 参考文档驱动产物能避免旧项目内容污染新文档。
 - 代码相关设计基于真实代码分析。
 - 方案设计有明确权衡，不是单一路径臆测。
 - 文档能支持业务评审、技术评审和开发排期。
@@ -852,8 +990,8 @@ MCP 不应该替代项目内 skills，而是作为外部事实来源。
 
 ## 22. 结论
 
-软件开发全流程 Skills 包应继续采用“阶段 skill + 总工作流 skill”的方式实现，但必须增加稳定的阶段产物契约、横切质量门禁和多入口工作流能力。
+软件开发全流程 Skills 包应继续采用“阶段 skill + 总工作流 skill”的方式实现，但必须增加稳定的阶段产物契约、横切质量门禁、多入口工作流能力和参考文档画像能力。
 
-没有阶段产物契约，工作流只是提示词串联；没有阶段直达能力，工作流只能覆盖理想化全流程；没有代码驱动模式，工作流无法处理真实项目中常见的“先有代码、后补设计文档”场景。
+没有阶段产物契约，工作流只是提示词串联；没有阶段直达能力，工作流只能覆盖理想化全流程；没有代码驱动模式，工作流无法处理真实项目中常见的“先有代码、后补设计文档”场景；没有参考文档驱动模式，工作流无法覆盖“用户临时给一份样例文档并要求按样例生成”的场景。
 
-最终形态应是一个可从需求进入、也可从代码进入、还能从任意阶段插入的软件交付 Agent 包。
+最终形态应是一个可从需求进入、可从代码进入、可从参考文档进入、还能从任意阶段插入的软件交付 Agent 包。
