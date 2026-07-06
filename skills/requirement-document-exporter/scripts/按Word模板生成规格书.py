@@ -47,21 +47,29 @@ REWRITE_PARTS = {
 }
 
 SECTION_TITLES = [
-    "1. 文档信息",
-    "2. 修订记录",
-    "3. 背景与目标",
-    "4. 术语与定义",
-    "5. 范围",
-    "6. 用户角色与权限",
-    "7. 业务流程",
-    "8. 功能需求",
-    "9. 数据需求",
-    "10. 权限需求",
-    "11. 非功能需求",
-    "12. 外部依赖与约束",
-    "13. 验收标准汇总",
-    "14. 需求追踪矩阵",
-    "15. 待后续确认事项",
+    {"level": 1, "title": "修订记录", "page": "2"},
+    {"level": 1, "title": "1. 背景与目标", "page": "4"},
+    {"level": 2, "title": "1.1 背景", "page": "4"},
+    {"level": 2, "title": "1.2 业务目标", "page": "4"},
+    {"level": 2, "title": "1.3 成功标准", "page": "4"},
+    {"level": 1, "title": "2. 术语与定义", "page": "5"},
+    {"level": 1, "title": "3. 范围", "page": "5"},
+    {"level": 2, "title": "3.1 本期范围", "page": "5"},
+    {"level": 2, "title": "3.2 不在本期范围", "page": "5"},
+    {"level": 2, "title": "3.3 后续可能扩展", "page": "5"},
+    {"level": 1, "title": "4. 用户角色与权限", "page": "6"},
+    {"level": 1, "title": "5. 业务流程", "page": "6"},
+    {"level": 2, "title": "5.1 主流程", "page": "6"},
+    {"level": 2, "title": "5.2 异常流程", "page": "6"},
+    {"level": 2, "title": "5.3 状态流转", "page": "6"},
+    {"level": 1, "title": "6. 功能需求", "page": "7"},
+    {"level": 1, "title": "7. 数据需求", "page": "8"},
+    {"level": 1, "title": "8. 权限需求", "page": "8"},
+    {"level": 1, "title": "9. 非功能需求", "page": "9"},
+    {"level": 1, "title": "10. 外部依赖与约束", "page": "9"},
+    {"level": 1, "title": "11. 验收标准汇总", "page": "10"},
+    {"level": 1, "title": "12. 需求追踪矩阵", "page": "10"},
+    {"level": 1, "title": "13. 待后续确认事项", "page": "11"},
 ]
 
 
@@ -78,6 +86,19 @@ def text(value: Any) -> str:
 def compact(value: Any, fallback: str = "无") -> str:
     value_text = text(value).strip()
     return value_text if value_text else fallback
+
+
+def chinese_date(value: Any) -> str:
+    value_text = compact(value, "")
+    if not value_text:
+        return ""
+    for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d"):
+        try:
+            parsed = dt.datetime.strptime(value_text, fmt).date()
+            return f"{parsed.year} 年 {parsed.month:02d} 月 {parsed.day:02d} 日"
+        except ValueError:
+            pass
+    return value_text
 
 
 def esc(value: Any) -> str:
@@ -164,13 +185,29 @@ def numbered(value: Any) -> str:
 
 
 def toc_field() -> str:
+    fallback_entries = "".join(
+        toc_entry(item["title"], item["page"], int(item["level"]))
+        for item in SECTION_TITLES
+    )
     return (
         "<w:p>"
         "<w:r><w:fldChar w:fldCharType=\"begin\"/></w:r>"
         '<w:r><w:instrText xml:space="preserve">TOC \\o "1-3" \\h \\z \\u</w:instrText></w:r>'
         "<w:r><w:fldChar w:fldCharType=\"separate\"/></w:r>"
-        f"{run_text('打开 Word/WPS 后更新域，可生成带页码的目录。', color='666666')}"
-        "<w:r><w:fldChar w:fldCharType=\"end\"/></w:r>"
+        "</w:p>"
+        f"{fallback_entries}"
+        "<w:p><w:r><w:fldChar w:fldCharType=\"end\"/></w:r></w:p>"
+    )
+
+
+def toc_entry(title: str, page: str, level: int = 1) -> str:
+    style = f"TOC{min(max(level, 1), 3)}"
+    return (
+        "<w:p>"
+        f'<w:pPr><w:pStyle w:val="{style}"/></w:pPr>'
+        f"{run_text(title)}"
+        "<w:r><w:tab/></w:r>"
+        f"{run_text(page)}"
         "</w:p>"
     )
 
@@ -275,6 +312,59 @@ def table(headers: list[str], rows: list[dict[str, Any]] | list[list[Any]], widt
     )
 
 
+def signoff_table(data: dict[str, Any]) -> str:
+    info = data.get("document_info", {})
+    approval = data.get("approval_info") or data.get("会签评审人员") or {}
+    if isinstance(approval, list):
+        merged: dict[str, Any] = {}
+        for item in approval:
+            if isinstance(item, dict):
+                label = compact(item.get("角色") or item.get("评审职责"), "")
+                name = compact(item.get("姓名") or item.get("签字"), "")
+                if label:
+                    merged[label] = name
+        approval = merged
+
+    rows = [
+        ("编制:", approval.get("编制") or approval.get("编制人") or info.get("编制人")),
+        ("校核:", approval.get("校核") or approval.get("校核人") or info.get("校核人")),
+        ("会签:", approval.get("会签") or approval.get("会签人") or info.get("会签人")),
+        ("批准:", approval.get("批准") or approval.get("批准人") or info.get("批准人")),
+    ]
+    widths = [1350, 2500]
+    row_xml = []
+    for label, value in rows:
+        row_xml.append(
+            "<w:tr>"
+            f"{signoff_cell(label, widths[0], label_cell=True)}"
+            f"{signoff_cell(compact(value, ''), widths[1])}"
+            "</w:tr>"
+        )
+    grid = "".join(f'<w:gridCol w:w="{width}"/>' for width in widths)
+    return (
+        '<w:tbl><w:tblPr><w:jc w:val="center"/><w:tblW w:w="3850" w:type="dxa"/><w:tblLayout w:type="fixed"/>'
+        '<w:tblBorders><w:top w:val="dashed" w:sz="4" w:space="0" w:color="BFBFBF"/>'
+        '<w:left w:val="dashed" w:sz="4" w:space="0" w:color="BFBFBF"/>'
+        '<w:bottom w:val="dashed" w:sz="4" w:space="0" w:color="BFBFBF"/>'
+        '<w:right w:val="dashed" w:sz="4" w:space="0" w:color="BFBFBF"/>'
+        '<w:insideH w:val="single" w:sz="4" w:space="0" w:color="000000"/>'
+        '<w:insideV w:val="dashed" w:sz="4" w:space="0" w:color="BFBFBF"/></w:tblBorders>'
+        '</w:tblPr>'
+        f"<w:tblGrid>{grid}</w:tblGrid>{''.join(row_xml)}</w:tbl>"
+    )
+
+
+def signoff_cell(value: Any, width: int, *, label_cell: bool = False) -> str:
+    return (
+        "<w:tc>"
+        f'<w:tcPr><w:tcW w:w="{width}" w:type="dxa"/><w:vAlign w:val="center"/>'
+        '<w:tcMar><w:top w:w="140" w:type="dxa"/><w:left w:w="180" w:type="dxa"/>'
+        '<w:bottom w:w="140" w:type="dxa"/><w:right w:w="180" w:type="dxa"/></w:tcMar></w:tcPr>'
+        f"{paragraph(value, 'SignoffLabel' if label_cell else 'SignoffText', align='center' if not label_cell else None)}"
+        "</w:tc>"
+    )
+
+
 def kv_table(data: dict[str, Any]) -> str:
     rows = [{"项目": key, "内容": value} for key, value in data.items()]
     return table(["项目", "内容"], rows, [1800, USABLE_WIDTH - 1800])
@@ -317,29 +407,20 @@ def detail_collection(
 
 def render_cover(data: dict[str, Any]) -> str:
     info = data.get("document_info", {})
+    approval = data.get("approval_info") if isinstance(data.get("approval_info"), dict) else {}
     title = compact(info.get("需求名称"), "需求规格书")
     version = compact(info.get("版本"), "v1.0")
-    status = compact(info.get("状态"), "待评审")
-    date = compact(info.get("编写日期"), dt.date.today().isoformat())
-    source = compact(info.get("来源材料"), "未填写")
-    basis = compact(info.get("确认依据"), "未填写")
-
-    rows = [
-        {"项目": "文档名称", "内容": title},
-        {"项目": "版本", "内容": version},
-        {"项目": "状态", "内容": status},
-        {"项目": "编写日期", "内容": date},
-        {"项目": "来源材料", "内容": source},
-        {"项目": "确认依据", "内容": basis},
-    ]
+    organization = compact(approval.get("单位") or info.get("编写单位"), "")
+    date = chinese_date(approval.get("日期") or info.get("编写日期") or dt.date.today().isoformat())
     return "".join(
         [
-            paragraph("需求规格书", "CoverKicker", align="center", spacing_before=760),
-            paragraph(title, "CoverTitle", align="center"),
-            paragraph(f"{version} / {status}", "CoverSubtitle", align="center"),
-            paragraph("", spacing_after=360),
-            table(["项目", "内容"], rows, [1800, USABLE_WIDTH - 1800]),
-            paragraph("本文档由需求分析、确认记录和规格化整理结果生成，用于评审、开发、测试和验收追踪。", "Caption", align="center"),
+            paragraph(f"{title} {version}".strip(), "CoverTitle", align="center", spacing_before=180),
+            paragraph("需求规格书", "CoverSubtitle", align="center"),
+            paragraph("", spacing_after=1500),
+            signoff_table(data),
+            paragraph("", spacing_after=880),
+            paragraph(organization, "CoverOrg", align="center") if organization else "",
+            paragraph(date, "CoverDate", align="center") if date else "",
         ]
     )
 
@@ -347,54 +428,53 @@ def render_cover(data: dict[str, Any]) -> str:
 def render_toc() -> str:
     parts = [paragraph("目录", "TOCHeading")]
     parts.append(toc_field())
-    parts.append(paragraph("章节概览", "Caption"))
-    parts.extend(paragraph(section, "TOCEntry") for section in SECTION_TITLES)
     return "".join(parts)
 
 
 def render_functional_requirements(items: list[dict[str, Any]]) -> str:
     fields = ["目标", "触发条件", "前置条件", "参与角色", "处理规则", "输入", "输出", "异常场景", "验收标准", "来源/确认依据", "备注"]
-    return detail_collection("8. 功能需求", items, ["编号", "名称"], fields, heading_style="Heading3")
+    return detail_collection("6. 功能需求", items, ["编号", "名称"], fields, heading_style="Heading3")
 
 
 def render_body(data: dict[str, Any]) -> str:
-    parts: list[str] = [render_cover(data), page_break(), render_toc(), page_break()]
+    parts: list[str] = [render_cover(data), page_break()]
 
-    parts.append(paragraph("1. 文档信息", "Heading1"))
-    parts.append(kv_table(data.get("document_info", {})))
-    parts.append(paragraph("2. 修订记录", "Heading1"))
+    parts.append(paragraph("修订记录", "Heading1"))
     parts.append(table(["版本", "日期", "修订内容", "修订人"], data.get("revision_history", [])))
+    parts.append(page_break())
+    parts.append(render_toc())
+    parts.append(page_break())
 
     background = data.get("background", {})
-    parts.append(paragraph("3. 背景与目标", "Heading1"))
-    parts.append(list_section("3.1 背景", background.get("背景", [])))
-    parts.append(list_section("3.2 业务目标", background.get("业务目标", [])))
-    parts.append(list_section("3.3 成功标准", background.get("成功标准", [])))
+    parts.append(paragraph("1. 背景与目标", "Heading1"))
+    parts.append(list_section("1.1 背景", background.get("背景", [])))
+    parts.append(list_section("1.2 业务目标", background.get("业务目标", [])))
+    parts.append(list_section("1.3 成功标准", background.get("成功标准", [])))
 
-    parts.append(paragraph("4. 术语与定义", "Heading1"))
+    parts.append(paragraph("2. 术语与定义", "Heading1"))
     parts.append(table(["术语", "定义", "备注"], data.get("terms", [])))
 
     scope = data.get("scope", {})
-    parts.append(paragraph("5. 范围", "Heading1"))
-    parts.append(list_section("5.1 本期范围", scope.get("本期范围", [])))
-    parts.append(list_section("5.2 不在本期范围", scope.get("不在本期范围", [])))
-    parts.append(list_section("5.3 后续可能扩展", scope.get("后续可能扩展", [])))
+    parts.append(paragraph("3. 范围", "Heading1"))
+    parts.append(list_section("3.1 本期范围", scope.get("本期范围", [])))
+    parts.append(list_section("3.2 不在本期范围", scope.get("不在本期范围", [])))
+    parts.append(list_section("3.3 后续可能扩展", scope.get("后续可能扩展", [])))
 
-    parts.append(paragraph("6. 用户角色与权限", "Heading1"))
+    parts.append(paragraph("4. 用户角色与权限", "Heading1"))
     parts.append(table(["角色", "角色说明", "可执行操作", "数据可见范围"], data.get("roles", [])))
 
     flows = data.get("flows", {})
-    parts.append(paragraph("7. 业务流程", "Heading1"))
-    parts.append(list_section("7.1 主流程", flows.get("主流程", []), ordered=True))
-    parts.append(list_section("7.2 异常流程", flows.get("异常流程", [])))
-    parts.append(paragraph("7.3 状态流转", "Heading3"))
+    parts.append(paragraph("5. 业务流程", "Heading1"))
+    parts.append(list_section("5.1 主流程", flows.get("主流程", []), ordered=True))
+    parts.append(list_section("5.2 异常流程", flows.get("异常流程", [])))
+    parts.append(paragraph("5.3 状态流转", "Heading3"))
     parts.append(table(["状态", "进入条件", "可执行动作", "退出条件"], flows.get("状态流转", [])))
 
     parts.append(render_functional_requirements(data.get("functional_requirements", [])))
 
     parts.append(
         detail_collection(
-            "9. 数据需求",
+            "7. 数据需求",
             data.get("data_requirements", []),
             ["编号", "数据对象"],
             ["字段/口径", "来源", "更新规则", "保留/归档", "验收标准"],
@@ -402,7 +482,7 @@ def render_body(data: dict[str, Any]) -> str:
     )
     parts.append(
         detail_collection(
-            "10. 权限需求",
+            "8. 权限需求",
             data.get("permission_requirements", []),
             ["编号", "角色", "操作"],
             ["条件", "限制", "审计要求"],
@@ -410,7 +490,7 @@ def render_body(data: dict[str, Any]) -> str:
     )
     parts.append(
         detail_collection(
-            "11. 非功能需求",
+            "9. 非功能需求",
             data.get("non_functional_requirements", []),
             ["编号", "类型"],
             ["要求", "验收方式"],
@@ -418,7 +498,7 @@ def render_body(data: dict[str, Any]) -> str:
     )
     parts.append(
         detail_collection(
-            "12. 外部依赖与约束",
+            "10. 外部依赖与约束",
             data.get("dependencies", []),
             ["依赖/约束", "类型"],
             ["影响", "负责人/系统", "处理方案"],
@@ -426,7 +506,7 @@ def render_body(data: dict[str, Any]) -> str:
     )
     parts.append(
         detail_collection(
-            "13. 验收标准汇总",
+            "11. 验收标准汇总",
             data.get("acceptance_criteria", []),
             ["编号", "验收项"],
             ["验收方法", "通过标准"],
@@ -434,7 +514,7 @@ def render_body(data: dict[str, Any]) -> str:
     )
     parts.append(
         detail_collection(
-            "14. 需求追踪矩阵",
+            "12. 需求追踪矩阵",
             data.get("traceability", []),
             ["规格书编号"],
             ["来源编号/原文依据", "确认记录", "状态"],
@@ -442,7 +522,7 @@ def render_body(data: dict[str, Any]) -> str:
     )
     parts.append(
         detail_collection(
-            "15. 待后续确认事项",
+            "13. 待后续确认事项",
             data.get("open_questions", []),
             ["编号", "问题"],
             ["当前假设", "影响范围", "需要谁确认"],
@@ -496,11 +576,16 @@ def styles() -> str:
 </w:docDefaults>
 <w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:after="0" w:line="360" w:lineRule="auto"/></w:pPr><w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="宋体" w:hAnsi="Times New Roman"/><w:sz w:val="21"/><w:szCs w:val="21"/><w:color w:val="000000"/></w:rPr></w:style>
 <w:style w:type="paragraph" w:styleId="BodyText"><w:name w:val="Body Text"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="0" w:line="360" w:lineRule="auto"/></w:pPr></w:style>
-<w:style w:type="paragraph" w:styleId="CoverKicker"><w:name w:val="Cover Kicker"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="120"/></w:pPr><w:rPr><w:b/><w:color w:val="000000"/><w:sz w:val="32"/><w:szCs w:val="32"/><w:rFonts w:ascii="Times New Roman" w:eastAsia="宋体" w:hAnsi="Times New Roman"/></w:rPr></w:style>
-<w:style w:type="paragraph" w:styleId="CoverTitle"><w:name w:val="Cover Title"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:before="80" w:after="160"/></w:pPr><w:rPr><w:b/><w:color w:val="000000"/><w:sz w:val="44"/><w:szCs w:val="44"/><w:rFonts w:ascii="Times New Roman" w:eastAsia="宋体" w:hAnsi="Times New Roman"/></w:rPr></w:style>
-<w:style w:type="paragraph" w:styleId="CoverSubtitle"><w:name w:val="Cover Subtitle"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="280"/></w:pPr><w:rPr><w:color w:val="000000"/><w:sz w:val="24"/><w:szCs w:val="24"/><w:rFonts w:ascii="Times New Roman" w:eastAsia="宋体" w:hAnsi="Times New Roman"/></w:rPr></w:style>
-<w:style w:type="paragraph" w:styleId="TOCHeading"><w:name w:val="TOC Heading"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:before="200" w:after="200"/></w:pPr><w:rPr><w:b/><w:color w:val="000000"/><w:sz w:val="36"/><w:szCs w:val="36"/><w:rFonts w:ascii="Times New Roman" w:eastAsia="黑体" w:hAnsi="Times New Roman"/></w:rPr></w:style>
-<w:style w:type="paragraph" w:styleId="TOCEntry"><w:name w:val="TOC Entry"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="0" w:line="360" w:lineRule="auto"/><w:tabs><w:tab w:val="right" w:leader="dot" w:pos="9000"/></w:tabs></w:pPr><w:rPr><w:sz w:val="21"/><w:szCs w:val="21"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="CoverTitle"><w:name w:val="Cover Title"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:before="80" w:after="100"/></w:pPr><w:rPr><w:b/><w:color w:val="000000"/><w:sz w:val="44"/><w:szCs w:val="44"/><w:rFonts w:ascii="Times New Roman" w:eastAsia="宋体" w:hAnsi="Times New Roman"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="CoverSubtitle"><w:name w:val="Cover Subtitle"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="280"/></w:pPr><w:rPr><w:b/><w:color w:val="000000"/><w:sz w:val="40"/><w:szCs w:val="40"/><w:rFonts w:ascii="Times New Roman" w:eastAsia="宋体" w:hAnsi="Times New Roman"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="CoverOrg"><w:name w:val="Cover Organization"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:before="160" w:after="80"/></w:pPr><w:rPr><w:color w:val="000000"/><w:sz w:val="36"/><w:szCs w:val="36"/><w:rFonts w:ascii="Times New Roman" w:eastAsia="宋体" w:hAnsi="Times New Roman"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="CoverDate"><w:name w:val="Cover Date"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="80"/></w:pPr><w:rPr><w:color w:val="000000"/><w:sz w:val="36"/><w:szCs w:val="36"/><w:rFonts w:ascii="Times New Roman" w:eastAsia="宋体" w:hAnsi="Times New Roman"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="SignoffLabel"><w:name w:val="Signoff Label"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="0" w:line="360" w:lineRule="auto"/></w:pPr><w:rPr><w:b/><w:color w:val="000000"/><w:sz w:val="28"/><w:szCs w:val="28"/><w:rFonts w:ascii="Times New Roman" w:eastAsia="宋体" w:hAnsi="Times New Roman"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="SignoffText"><w:name w:val="Signoff Text"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="0" w:line="360" w:lineRule="auto"/></w:pPr><w:rPr><w:color w:val="000000"/><w:sz w:val="28"/><w:szCs w:val="28"/><w:rFonts w:ascii="Times New Roman" w:eastAsia="宋体" w:hAnsi="Times New Roman"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="TOCHeading"><w:name w:val="TOC Heading"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:before="120" w:after="160"/></w:pPr><w:rPr><w:color w:val="0070C0"/><w:sz w:val="36"/><w:szCs w:val="36"/><w:rFonts w:ascii="Times New Roman" w:eastAsia="宋体" w:hAnsi="Times New Roman"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="TOC1"><w:name w:val="toc 1"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="0" w:line="300" w:lineRule="auto"/><w:tabs><w:tab w:val="right" w:leader="dot" w:pos="9300"/></w:tabs></w:pPr><w:rPr><w:sz w:val="21"/><w:szCs w:val="21"/><w:rFonts w:ascii="Times New Roman" w:eastAsia="宋体" w:hAnsi="Times New Roman"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="TOC2"><w:name w:val="toc 2"/><w:basedOn w:val="TOC1"/><w:pPr><w:ind w:left="420"/><w:spacing w:after="0" w:line="300" w:lineRule="auto"/><w:tabs><w:tab w:val="right" w:leader="dot" w:pos="9300"/></w:tabs></w:pPr></w:style>
+<w:style w:type="paragraph" w:styleId="TOC3"><w:name w:val="toc 3"/><w:basedOn w:val="TOC1"/><w:pPr><w:ind w:left="840"/><w:spacing w:after="0" w:line="300" w:lineRule="auto"/><w:tabs><w:tab w:val="right" w:leader="dot" w:pos="9300"/></w:tabs></w:pPr></w:style>
 <w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="340" w:after="330" w:line="578" w:lineRule="auto"/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:color w:val="000000"/><w:sz w:val="44"/><w:szCs w:val="44"/><w:rFonts w:ascii="Times New Roman" w:eastAsia="黑体" w:hAnsi="Times New Roman"/></w:rPr></w:style>
 <w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:keepLines/><w:spacing w:before="260" w:after="260" w:line="416" w:lineRule="auto"/><w:outlineLvl w:val="1"/></w:pPr><w:rPr><w:b/><w:color w:val="000000"/><w:sz w:val="32"/><w:szCs w:val="32"/><w:rFonts w:ascii="Times New Roman" w:eastAsia="黑体" w:hAnsi="Times New Roman"/></w:rPr></w:style>
 <w:style w:type="paragraph" w:styleId="Heading3"><w:name w:val="heading 3"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="120" w:after="120" w:line="360" w:lineRule="auto"/><w:outlineLvl w:val="2"/></w:pPr><w:rPr><w:b/><w:color w:val="000000"/><w:sz w:val="24"/><w:szCs w:val="24"/><w:rFonts w:ascii="Times New Roman" w:eastAsia="宋体" w:hAnsi="Times New Roman"/></w:rPr></w:style>
