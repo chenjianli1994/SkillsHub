@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+import sys
+# Windows PowerShell 中文输出修复
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+except (AttributeError, OSError):
+    pass
 import argparse
 import json
 import re
@@ -138,16 +145,13 @@ def main() -> int:
     profile = build_profile(path, args.reference_use)
 
     state_dir = project_root / "state"
-    structured_dir = state_dir / "structured"
-    structured_dir.mkdir(parents=True, exist_ok=True)
+    state_dir.mkdir(parents=True, exist_ok=True)
 
     json_path = state_dir / "reference-document-profile.json"
     md_path = state_dir / "参考文档结构画像.md"
-    structured_json_path = structured_dir / "reference-document-profile.json"
 
     payload = json.dumps(profile, ensure_ascii=False, indent=2)
     json_path.write_text(payload, encoding="utf-8")
-    structured_json_path.write_text(payload, encoding="utf-8")
     md_path.write_text(markdown_profile(profile), encoding="utf-8")
 
     print(json_path)

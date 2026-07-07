@@ -3,6 +3,14 @@
 
 from __future__ import annotations
 
+import sys
+# Windows PowerShell 中文输出修复
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+except (AttributeError, OSError):
+    pass
+
 import argparse
 import re
 from pathlib import Path
