@@ -7,6 +7,7 @@ try:
 except (AttributeError, OSError):
     pass
 import json
+import py_compile
 from pathlib import Path
 
 
@@ -48,6 +49,8 @@ REQUIRED_FILES = [
     "skills/reference-document-profiler/templates/参考文档结构画像模板.md",
     "skills/reference-document-profiler/references/参考用途判定规则.md",
     "skills/reference-document-profiler/scripts/生成参考文档画像.py",
+    "skills/requirement-specification-writer/templates/需求规格书数据模板.json",
+    "skills/requirement-specification-writer/scripts/校验需求规格书.py",
     "skills/requirement-decomposition-planner/SKILL.md",
     "skills/requirement-decomposition-planner/templates/需求拆解清单模板.md",
     "skills/requirement-decomposition-planner/templates/需求拆解数据模板.json",
@@ -69,6 +72,7 @@ REQUIRED_FILES = [
 JSON_TEMPLATES = [
     "skills/software-delivery-orchestrator/templates/工作流状态模板.json",
     "skills/reference-document-profiler/templates/参考文档画像模板.json",
+    "skills/requirement-specification-writer/templates/需求规格书数据模板.json",
     "skills/requirement-decomposition-planner/templates/需求拆解数据模板.json",
     "skills/implementation-executor/templates/实现记录模板.json",
     "skills/codebase-analysis-reporter/templates/代码分析数据模板.json",
@@ -107,6 +111,15 @@ def main() -> int:
                 json.loads(path.read_text(encoding="utf-8-sig"))
             except json.JSONDecodeError as exc:
                 errors.append(f"JSON 模板不可解析：{filename}（{exc}）")
+
+    for path in sorted(project_root.rglob("*.py")):
+        if "__pycache__" in path.parts:
+            continue
+        relative_path = path.relative_to(project_root).as_posix()
+        try:
+            py_compile.compile(str(path), doraise=True)
+        except py_compile.PyCompileError as exc:
+            errors.append(f"Python 脚本不可编译：{relative_path}（{exc.msg}）")
 
     skills_dir = project_root / "skills"
     state_dir = project_root / "state"

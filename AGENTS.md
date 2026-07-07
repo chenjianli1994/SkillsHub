@@ -60,7 +60,7 @@
 | --- | --- |
 | `full-flow` | 从需求开始执行完整流程 |
 | `full-flow-with-code` | 从需求开始执行完整流程并生成测试通过的代码，再回填详设/策略 |
-| `requirement-only` | 只做需求分析、需求整理或需求规格书 |
+| `requirement-only` | 只做需求分析、需求整理、需求规格书或需求拆解 |
 | `codebase-only` | 只分析当前代码结构和实现现状 |
 | `design-from-code` | 基于当前代码生成软件方案或详细设计 |
 | `strategy-from-code` | 基于当前代码生成策略描述文档 |
@@ -91,6 +91,7 @@
 - 当前完整需求规格书工作流默认从 `skills/requirement-workflow-orchestrator/SKILL.md` 开始。
 - 需求分析任务使用 `skills/requirement-analysis-report/SKILL.md`。
 - 需求规格书撰写任务使用 `skills/requirement-specification-writer/SKILL.md`。
+- 需求规格书默认输出 `outputs/02_需求规格书.md`，并同步输出 `state/structured/requirement-specification.json` 供需求拆解和后续设计消费。
 - 需求质量检查任务使用 `skills/requirement-quality-gate/SKILL.md`。
 - Word/DOCX 或 PDF 导出任务使用 `skills/requirement-document-exporter/SKILL.md`，但只能在用户明确要求导出时使用。
 

@@ -17,7 +17,7 @@ description: "Orchestrate an end-to-end Chinese requirements engineering workflo
 | --- | --- | --- | --- |
 | S1 输入接收 | 用户提供原始需求文件或文本 | 读取输入，调用需求分析报告能力 | 生成需求分析报告 |
 | S2 确认门 | 分析报告包含待确认问题 | 主动输出确认清单，等待用户确认 | P0/P1 问题已确认或被明确标记为假设 |
-| S3 规格书生成 | 用户确认分析结果或补充确认答案 | 调用需求规格书生成能力 | 生成优化后的需求规格书 |
+| S3 规格书生成 | 用户确认分析结果或补充确认答案 | 调用需求规格书生成能力 | 生成优化后的需求规格书和结构化规格书 JSON |
 | S4 质量门禁 | 规格书已生成 | 调用需求质量门禁能力 | 输出通过/有条件通过/不通过结论 |
 | S5 反馈修订 | 用户对规格书提出修改意见 | 分类反馈并修改规格书 | 输出修订版、变更摘要和剩余问题 |
 | S6 格式导出 | 用户明确要求 Word/DOCX/PDF | 调用文档导出能力 | 输出指定格式文件 |
@@ -30,7 +30,7 @@ description: "Orchestrate an end-to-end Chinese requirements engineering workflo
 4. 用户确认结果要沉淀为确认记录，作为规格书的来源依据。
 5. 规格书生成后必须做质量门禁；发现阻塞问题时先修订，再输出最终版本。
 6. 用户后续反馈修改文档时，先判断反馈类型，再更新规格书，并追加修订记录。
-7. 默认只输出 Markdown 格式的需求规格书；只有用户明确要求 Word、DOCX 或 PDF 时才导出其他格式。
+7. 默认输出 Markdown 格式的需求规格书，并同步生成 `state/structured/requirement-specification.json`；只有用户明确要求 Word、DOCX 或 PDF 时才导出其他格式。
 
 ## 调用子 skill 的方式
 
@@ -76,6 +76,7 @@ description: "Orchestrate an end-to-end Chinese requirements engineering workflo
 - `需求确认清单.md`
 - `需求确认记录.md`
 - `优化后的需求规格书.md`
+- `state/structured/requirement-specification.json`
 - `需求质量检查报告.md`
 - `需求规格书修订记录.md`
 - 可选：`优化后的需求规格书.docx`，仅在用户要求 Word/DOCX 时生成。
@@ -90,7 +91,7 @@ description: "Orchestrate an end-to-end Chinese requirements engineering workflo
 
 ## 格式导出规则
 
-- 用户没有指定格式时，最终规格书只输出 Markdown。
-- 用户说“同时给 Word”“输出 docx”“我要 Word 版”时，生成 Word 结构化数据，并调用 `requirement-document-exporter` 按 Word 模板直出 `.docx`；不要把 Markdown 转为 Word。
+- 用户没有指定格式时，最终规格书输出 Markdown，并同步生成内部结构化 JSON。
+- 用户说“同时给 Word”“输出 docx”“我要 Word 版”时，生成 `state/structured/需求规格书Word数据.json`，并调用 `requirement-document-exporter` 按 Word 模板直出 `.docx`；不要把 Markdown 转为 Word。
 - 用户说“转 PDF”“给我 PDF”“输出 pdf 文件”时，调用 `requirement-document-exporter` 将用户指定文件或当前最新规格书转换为 `.pdf`。
 - 用户要求 Word 和 PDF 时，Word 按模板直出；PDF 默认从 Markdown 生成，除非用户明确要求从 Word 文件转 PDF。
