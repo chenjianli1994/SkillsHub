@@ -143,7 +143,7 @@ def detect_entry_type(text: str) -> str:
         return "task-plan-from-design"
 
     # 7. requirement-only
-    if has_any(normalized, ["需求分析", "需求规格书", "需求确认", "需求文档"]):
+    if has_any(normalized, ["需求分析", "需求规格书", "需求确认", "需求文档", "需求拆解", "软件需求分析", "cm矩阵", "符合性矩阵"]):
         return "requirement-only"
 
     return "full-flow"

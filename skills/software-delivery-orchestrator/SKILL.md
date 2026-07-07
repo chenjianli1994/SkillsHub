@@ -24,7 +24,7 @@ description: Orchestrate the project-level Chinese software delivery workflow ac
 | --- | --- | --- |
 | `full-flow` | 用户要求从需求开始跑完整流程 | 需求分析 -> 需求整理 -> 需求拆解 -> 代码分析 -> 方案设计 -> 详细设计 -> 策略文档 -> 任务计划 -> 质量门禁 |
 | `full-flow-with-code` | 用户要求从需求一路做到测试通过的代码 | 需求分析 -> …… -> 任务计划 -> 代码实现（`implementation-executor`）-> 代码驱动回填详设/策略 -> 质量门禁 |
-| `requirement-only` | 用户只要需求分析、需求规格书或需求确认 | 调用需求类 skills |
+| `requirement-only` | 用户只要需求分析、需求规格书、需求拆解或需求确认 | 调用需求类 skills；需求拆解调用 `requirement-decomposition-planner` |
 | `codebase-only` | 用户只要分析当前代码结构和实现现状 | 调用 `codebase-analysis-reporter`，未建立时输出待建提示 |
 | `design-from-code` | 用户没有需求输入，要求基于当前代码生成设计文档 | 先代码分析，再方案/详细设计 |
 | `strategy-from-code` | 用户要求基于当前代码生成策略文档 | 先代码分析，再调用 `strategy-document-writer` |
@@ -75,6 +75,7 @@ state/工作流状态.json
 ## 阶段调度规则
 
 - 需求类任务优先使用 `requirement-workflow-orchestrator`、`requirement-analysis-report`、`requirement-specification-writer`。
+- 需求拆解任务优先使用 `requirement-decomposition-planner`，按 ASPICE SWE.1 风格输出软件需求清单、CM 矩阵和 `requirement-breakdown.json`。
 - 策略文档任务优先使用 `strategy-document-writer`。
 - 参考文档驱动任务优先使用 `reference-document-profiler`。
 - 代码分析、方案设计、详细设计、任务计划等 skill 尚未建立时，不要假装已完成；在状态文件中记录阻塞项。

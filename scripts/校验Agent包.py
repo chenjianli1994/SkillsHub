@@ -26,6 +26,7 @@ REQUIRED_SKILLS = {
     "requirement-workflow-orchestrator": ["templates", "scripts"],
     "requirement-analysis-report": ["templates", "scripts"],
     "requirement-specification-writer": ["templates", "scripts"],
+    "requirement-decomposition-planner": ["templates", "scripts", "references"],
     "requirement-document-exporter": ["templates", "scripts"],
     "requirement-quality-gate": ["templates"],
     "strategy-document-writer": ["templates", "scripts", "references"],
@@ -47,6 +48,11 @@ REQUIRED_FILES = [
     "skills/reference-document-profiler/templates/参考文档结构画像模板.md",
     "skills/reference-document-profiler/references/参考用途判定规则.md",
     "skills/reference-document-profiler/scripts/生成参考文档画像.py",
+    "skills/requirement-decomposition-planner/SKILL.md",
+    "skills/requirement-decomposition-planner/templates/需求拆解清单模板.md",
+    "skills/requirement-decomposition-planner/templates/需求拆解数据模板.json",
+    "skills/requirement-decomposition-planner/references/ASPICE风格需求拆解规则.md",
+    "skills/requirement-decomposition-planner/scripts/校验需求拆解.py",
     "skills/codebase-analysis-reporter/SKILL.md",
     "skills/codebase-analysis-reporter/templates/现有代码分析报告模板.md",
     "skills/codebase-analysis-reporter/templates/代码分析数据模板.json",
@@ -63,6 +69,7 @@ REQUIRED_FILES = [
 JSON_TEMPLATES = [
     "skills/software-delivery-orchestrator/templates/工作流状态模板.json",
     "skills/reference-document-profiler/templates/参考文档画像模板.json",
+    "skills/requirement-decomposition-planner/templates/需求拆解数据模板.json",
     "skills/implementation-executor/templates/实现记录模板.json",
     "skills/codebase-analysis-reporter/templates/代码分析数据模板.json",
 ]
