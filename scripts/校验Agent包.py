@@ -29,6 +29,8 @@ REQUIRED_SKILLS = {
     "requirement-document-exporter": ["templates", "scripts"],
     "requirement-quality-gate": ["templates"],
     "strategy-document-writer": ["templates", "scripts", "references"],
+    "implementation-executor": ["templates", "scripts", "references"],
+    "codebase-analysis-reporter": ["templates", "scripts", "references"],
 }
 
 REQUIRED_FILES = [
@@ -45,11 +47,24 @@ REQUIRED_FILES = [
     "skills/reference-document-profiler/templates/参考文档结构画像模板.md",
     "skills/reference-document-profiler/references/参考用途判定规则.md",
     "skills/reference-document-profiler/scripts/生成参考文档画像.py",
+    "skills/codebase-analysis-reporter/SKILL.md",
+    "skills/codebase-analysis-reporter/templates/现有代码分析报告模板.md",
+    "skills/codebase-analysis-reporter/templates/代码分析数据模板.json",
+    "skills/codebase-analysis-reporter/references/代码分析规则.md",
+    "skills/codebase-analysis-reporter/scripts/扫描代码结构.py",
+    "skills/codebase-analysis-reporter/scripts/校验代码分析.py",
+    "skills/implementation-executor/SKILL.md",
+    "skills/implementation-executor/templates/实现记录模板.json",
+    "skills/implementation-executor/templates/开发执行报告模板.md",
+    "skills/implementation-executor/references/代码实现执行规则.md",
+    "skills/implementation-executor/scripts/校验实现记录.py",
 ]
 
 JSON_TEMPLATES = [
     "skills/software-delivery-orchestrator/templates/工作流状态模板.json",
     "skills/reference-document-profiler/templates/参考文档画像模板.json",
+    "skills/implementation-executor/templates/实现记录模板.json",
+    "skills/codebase-analysis-reporter/templates/代码分析数据模板.json",
 ]
 
 FORBIDDEN_OUTPUT_NAMES = {
@@ -72,8 +87,11 @@ def main() -> int:
             errors.append(f"缺少目录：{dirname}/")
 
     for filename in REQUIRED_FILES:
-        if not (project_root / filename).is_file():
+        path = project_root / filename
+        if not path.is_file():
             errors.append(f"缺少必备文件：{filename}")
+        elif not path.read_text(encoding="utf-8-sig").strip():
+            errors.append(f"必备文件为空：{filename}")
 
     for filename in JSON_TEMPLATES:
         path = project_root / filename

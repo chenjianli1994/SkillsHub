@@ -2,7 +2,7 @@
 
 ## 1. 建设目标
 
-本方案用于把当前项目级需求规格书 Agent 包扩展为覆盖完整软件开发前期流程的项目级 Skills 包。目标不是把所有能力塞进一个巨大 skill，而是形成一套可编排、可复用、可评审、可逐步扩展的软件交付工作流。
+本方案用于把当前项目级需求规格书 Agent 包扩展为覆盖软件开发主要流程的项目级 Skills 包。目标不是把所有能力塞进一个巨大 skill，而是形成一套可编排、可复用、可评审、可逐步扩展的软件交付工作流。
 
 覆盖范围包括：
 
@@ -14,6 +14,7 @@
 - 软件详细设计文档
 - 策略描述文档
 - 开发任务计划
+- 代码实现（生成测试通过的代码）
 - 质量检查
 - Word/PDF 导出
 - 参考文档解析与参考文档驱动生成
@@ -36,6 +37,7 @@ skills/
 ├── detailed-design-writer/
 ├── strategy-document-writer/
 ├── implementation-task-planner/
+├── implementation-executor/
 ├── software-quality-gate/
 └── document-exporter/
 ```
@@ -109,7 +111,7 @@ outputs/
 
 ## 4. 工作流阶段总览
 
-完整流程建议分为 9 个阶段。
+完整流程建议分为 10 个阶段。
 
 | 阶段 | 阶段名称 | 主要 skill | 核心产物 |
 | --- | --- | --- | --- |
@@ -122,7 +124,8 @@ outputs/
 | 6 | 软件详细设计 | `detailed-design-writer` | `06_软件详细设计说明书.md` |
 | 7 | 策略描述文档 | `strategy-document-writer` | `07_策略描述文档.md` |
 | 8 | 开发任务计划 | `implementation-task-planner` | `08_开发任务计划.md` |
-| 9 | 质量门禁与导出 | `software-quality-gate`、`document-exporter` | `09_质量检查报告.md`、导出文件 |
+| 9 | 代码实现 | `implementation-executor` | 测试通过的代码、`implementation-record.json`、`09_开发执行报告.md` |
+| 10 | 质量门禁与导出 | `software-quality-gate`、`document-exporter` | `10_质量检查报告.md`、导出文件 |
 
 ## 5. 工作流入口模式
 
@@ -159,18 +162,20 @@ outputs/
 
 | 入口类型 | 触发场景 | 建议执行阶段 |
 | --- | --- | --- |
-| `full-flow` | 从需求开始跑完整流程 | 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 |
-| `requirement-only` | 只做需求分析、需求整理或需求规格书 | 0 -> 1 -> 2 -> 9 |
-| `codebase-only` | 只分析当前代码结构和实现现状 | 0 -> 4 -> 9 |
-| `design-from-code` | 没有需求输入，直接基于当前代码输出软件设计文档 | 0 -> 4 -> 5 -> 6 -> 9 |
-| `strategy-from-code` | 基于当前代码中的规则、策略、算法、控制逻辑输出策略文档 | 0 -> 4 -> 7 -> 9 |
-| `reference-doc-driven` | 用户提供参考文档，要求按参考文档结构、风格或格式生成内容 | 0 -> 参考文档画像 -> 目标阶段 -> 9 |
-| `design-from-code-with-reference` | 基于当前代码生成设计文档，同时参考用户提供的文档结构或格式 | 0 -> 参考文档画像 -> 4 -> 5 -> 6 -> 9 |
-| `strategy-from-reference` | 参考用户提供的策略文档生成新策略文档 | 0 -> 参考文档画像 -> 7 -> 9 |
-| `requirement-from-reference` | 参考用户提供的需求文档生成新需求文档 | 0 -> 参考文档画像 -> 1 -> 2 -> 9 |
+| `full-flow` | 从需求开始跑完整流程 | 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 10 |
+| `full-flow-with-code` | 从需求开始跑完整流程，一路做到测试通过的代码并回填详设/策略 | 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 |
+| `requirement-only` | 只做需求分析、需求整理或需求规格书 | 0 -> 1 -> 2 -> 10 |
+| `codebase-only` | 只分析当前代码结构和实现现状 | 0 -> 4 -> 10 |
+| `design-from-code` | 没有需求输入，直接基于当前代码输出软件设计文档 | 0 -> 4 -> 5 -> 6 -> 10 |
+| `strategy-from-code` | 基于当前代码中的规则、策略、算法、控制逻辑输出策略文档 | 0 -> 4 -> 7 -> 10 |
+| `reference-doc-driven` | 用户提供参考文档，要求按参考文档结构、风格或格式生成内容 | 0 -> 参考文档画像 -> 目标阶段 -> 10 |
+| `design-from-code-with-reference` | 基于当前代码生成设计文档，同时参考用户提供的文档结构或格式 | 0 -> 参考文档画像 -> 4 -> 5 -> 6 -> 10 |
+| `strategy-from-reference` | 参考用户提供的策略文档生成新策略文档 | 0 -> 参考文档画像 -> 7 -> 10 |
+| `requirement-from-reference` | 参考用户提供的需求文档生成新需求文档 | 0 -> 参考文档画像 -> 1 -> 2 -> 10 |
 | `export-with-reference-style` | 导出 Word/DOCX 时参考用户提供的文档格式或样式 | 0 -> 参考文档画像 -> 导出 |
-| `task-plan-from-design` | 基于已有设计文档生成开发任务计划 | 0 -> 8 -> 9 |
-| `quality-only` | 只检查已有阶段产物质量 | 0 -> 9 |
+| `implement-from-plan` | 基于任务计划或详细设计生成代码并测试通过 | 0 -> 9 -> 10（已有任务计划/详设时直接执行；两者都缺时可降级基于规格书实现并记录阻塞） |
+| `task-plan-from-design` | 基于已有设计文档生成开发任务计划 | 0 -> 8 -> 10 |
+| `quality-only` | 只检查已有阶段产物质量 | 0 -> 10 |
 | `export-only` | 只导出 Word/DOCX 或 PDF | 0 -> 导出 |
 
 适用请求示例：
@@ -224,7 +229,7 @@ outputs/
 ├── 05_当前软件方案说明.md
 ├── 06_当前软件详细设计说明书.md
 ├── 07_当前策略描述文档.md
-└── 09_质量检查报告.md
+└── 10_质量检查报告.md
 
 state/
 ├── 工作流状态.json
@@ -748,7 +753,56 @@ state/structured/implementation-plan.json
 - 是否避免过大任务。
 - 是否明确并行和串行关系。
 
-## 15. 阶段 9：质量门禁与导出
+## 15. 阶段 9：代码实现
+
+### 目标
+
+把开发任务计划和详细设计落地为测试通过、可追溯到需求编号的真实代码，并产出实现记录，作为代码驱动模式反出权威版详细设计与策略文档的事实来源。
+
+### 主要 skill
+
+`implementation-executor`
+
+### 输入
+
+- `08_开发任务计划.md`、`implementation-plan.json`
+- `06_软件详细设计说明书.md`、`detailed-design.json`
+- `05_软件方案设计.md`、`02_需求规格书.md`（需求编号来源）
+- 现有代码仓库
+- `knowledge/编码规范.md`、`knowledge/测试规范.md`
+
+### 要完成的内容
+
+- 建立开发任务到代码文件、代码文件到需求编号的映射。
+- 逐个任务实现代码，优先复用现有代码。
+- 为每个任务编写测试，覆盖对应验收标准。
+- 运行测试直到通过；无法通过的如实标记，不跳过、不注释掉测试。
+- 记录每个任务的实现状态：已实现且测试通过、已实现未验证、部分实现、未实现（阻塞）。
+- 生成实现记录 JSON 和面向评审的开发执行报告。
+- 过质量门：只有测试通过且可追溯需求编号的任务，才允许进入代码驱动出文档。
+
+### 输出
+
+```text
+outputs/09_开发执行报告.md
+state/structured/implementation-record.json
+（代码写入代码仓库/工作区，不写入 outputs/）
+```
+
+### 质量检查点
+
+- 每个任务是否挂了需求编号，能回溯到规格书。
+- 测试是否真实运行且通过，而非跳过或删除。
+- 实现状态是否如实反映，不把未完成写成完成。
+- 是否优先复用现有代码。
+- `可进入代码驱动出文档` 是否与测试状态自洽。
+- 代码是否写入仓库而非 `outputs/`。
+
+### 与代码驱动模式的衔接
+
+代码实现完成且测试通过后，`codebase-analysis-reporter` 以真实代码为事实来源，`detailed-design-writer` / `strategy-document-writer` 据此产出忠实于实现的详细设计与策略文档。详设/策略的权威版本以「编码后测试通过」的这一版为准，编码前的前向设计只作为实现输入。这从根本上避免「设计先于代码、代码一改文档就过时」的漂移。
+
+## 16. 阶段 10：质量门禁与导出
 
 ### 目标
 
@@ -783,7 +837,7 @@ state/structured/implementation-plan.json
 ### 输出
 
 ```text
-outputs/09_质量检查报告.md
+outputs/10_质量检查报告.md
 outputs/exported/
 ```
 
@@ -798,7 +852,7 @@ outputs/exported/
 - 参考文档驱动时，是否避免污染旧项目内容。
 - 是否只在用户明确要求时导出 Word/PDF。
 
-## 16. 阶段产物契约
+## 17. 阶段产物契约
 
 每个阶段必须同时考虑人类可读产物和机器可读产物。
 
@@ -812,7 +866,8 @@ outputs/
 ├── 06_软件详细设计说明书.md
 ├── 07_策略描述文档.md
 ├── 08_开发任务计划.md
-├── 09_质量检查报告.md
+├── 09_开发执行报告.md
+├── 10_质量检查报告.md
 └── exported/
 
 state/
@@ -827,7 +882,8 @@ state/
     ├── solution-design.json
     ├── detailed-design.json
     ├── strategy-document.json
-    └── implementation-plan.json
+    ├── implementation-plan.json
+    └── implementation-record.json
 ```
 
 契约原则：
@@ -841,7 +897,7 @@ state/
 - 代码驱动模式的 JSON 必须保留代码依据、推断依据和待确认项。
 - 参考文档驱动模式的 JSON 必须保留参考文档路径、参考用途、允许复用范围和禁止复用项。
 
-## 17. 总工作流 Skill 职责
+## 18. 总工作流 Skill 职责
 
 `software-delivery-orchestrator` 是全流程入口。
 
@@ -866,7 +922,7 @@ state/
 - 直接生成 Word/PDF。
 - 替代质量门禁。
 
-## 18. 各阶段 Skill 设计要求
+## 19. 各阶段 Skill 设计要求
 
 每个阶段 skill 建议保持一致结构：
 
@@ -909,17 +965,18 @@ skill-name/
 - 示例文档
 - 复杂判断规则
 
-## 19. 推荐建设顺序
+## 20. 推荐建设顺序
 
 第一批先补齐主链路：
 
 1. `software-delivery-orchestrator`
 2. `requirement-decomposition-planner`
-3. `codebase-analysis-reporter`
+3. `codebase-analysis-reporter`（现有代码分析，已落地，代码驱动模式的事实来源起点）
 4. `solution-architecture-designer`
 5. `detailed-design-writer`
 6. `software-quality-gate`
 7. `reference-document-profiler`
+8. `implementation-executor`（代码实现阶段，已落地，衔接任务计划与代码驱动回填文档）
 
 第一批建设时必须同步支持以下入口：
 
@@ -931,15 +988,17 @@ skill-name/
 6. `reference-doc-driven`
 7. `design-from-code-with-reference`
 8. `strategy-from-reference`
+9. `task-plan-from-design`
+10. `implement-from-plan`
+11. `full-flow-with-code`
 
 第二批增强工程落地：
 
-1. `implementation-task-planner`
-2. `document-exporter` 统一化
-3. `knowledge/设计规范.md`
-4. `knowledge/架构原则.md`
-5. `knowledge/编码规范.md`
-6. `knowledge/测试规范.md`
+1. `document-exporter` 统一化
+2. `knowledge/设计规范.md`
+3. `knowledge/架构原则.md`
+4. `knowledge/编码规范.md`
+5. `knowledge/测试规范.md`
 
 第三批接入外部系统：
 
@@ -949,7 +1008,7 @@ skill-name/
 4. 缺陷管理系统 MCP
 5. 数据库字典 MCP
 
-## 20. MCP 接入位置
+## 21. MCP 接入位置
 
 MCP 不应该替代项目内 skills，而是作为外部事实来源。
 
@@ -970,7 +1029,7 @@ MCP 不应该替代项目内 skills，而是作为外部事实来源。
 - 最后按需调用 MCP。
 - MCP 返回内容必须标记来源。
 
-## 21. 成功标准
+## 22. 成功标准
 
 这套 Skills 包建设完成后，应满足：
 
@@ -983,12 +1042,13 @@ MCP 不应该替代项目内 skills，而是作为外部事实来源。
 - 代码驱动产物能区分确定事实、合理推断和待确认项。
 - 用户提供参考文档时，能够先生成参考文档画像，再按参考文档结构、风格或格式生成目标文档。
 - 参考文档驱动产物能避免旧项目内容污染新文档。
+- 有需求或设计输入时，能够生成测试通过的代码，并基于测试通过的代码反出权威版详细设计和策略文档，保证需求—代码—文档三者可追溯对齐。
 - 代码相关设计基于真实代码分析。
 - 方案设计有明确权衡，不是单一路径臆测。
 - 文档能支持业务评审、技术评审和开发排期。
 - Word/PDF 导出仍保持显式触发，不默认生成。
 
-## 22. 结论
+## 23. 结论
 
 软件开发全流程 Skills 包应继续采用“阶段 skill + 总工作流 skill”的方式实现，但必须增加稳定的阶段产物契约、横切质量门禁、多入口工作流能力和参考文档画像能力。
 

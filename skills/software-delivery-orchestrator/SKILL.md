@@ -23,6 +23,7 @@ description: Orchestrate the project-level Chinese software delivery workflow ac
 | 入口类型 | 触发场景 | 后续动作 |
 | --- | --- | --- |
 | `full-flow` | 用户要求从需求开始跑完整流程 | 需求分析 -> 需求整理 -> 需求拆解 -> 代码分析 -> 方案设计 -> 详细设计 -> 策略文档 -> 任务计划 -> 质量门禁 |
+| `full-flow-with-code` | 用户要求从需求一路做到测试通过的代码 | 需求分析 -> …… -> 任务计划 -> 代码实现（`implementation-executor`）-> 代码驱动回填详设/策略 -> 质量门禁 |
 | `requirement-only` | 用户只要需求分析、需求规格书或需求确认 | 调用需求类 skills |
 | `codebase-only` | 用户只要分析当前代码结构和实现现状 | 调用 `codebase-analysis-reporter`，未建立时输出待建提示 |
 | `design-from-code` | 用户没有需求输入，要求基于当前代码生成设计文档 | 先代码分析，再方案/详细设计 |
@@ -33,6 +34,7 @@ description: Orchestrate the project-level Chinese software delivery workflow ac
 | `requirement-from-reference` | 参考需求文档生成新需求文档 | 参考文档画像 -> 需求类 skills |
 | `export-with-reference-style` | 导出 Word/DOCX 时参考用户提供的文档格式或样式 | 参考文档画像 -> 导出 |
 | `task-plan-from-design` | 基于已有设计生成开发任务计划 | 调用任务计划 skill，未建立时输出待建提示 |
+| `implement-from-plan` | 按任务计划或详细设计生成代码并跑测试 | 调用 `implementation-executor`；上游任务计划/详设缺失时降级基于规格书并记录阻塞 |
 | `quality-only` | 只检查已有产物质量 | 调用质量门禁 |
 | `export-only` | 只导出 Word/DOCX/PDF | 调用导出 skill |
 

@@ -17,11 +17,67 @@ def has_all(text: str, keywords: list[str]) -> bool:
     return all(keyword.lower() in text for keyword in keywords)
 
 
+def rejects_code_writing(text: str) -> bool:
+    return has_any(text, [
+        "不要写代码",
+        "不写代码",
+        "无需写代码",
+        "不用写代码",
+        "先不写代码",
+        "不要生成代码",
+        "不生成代码",
+        "无需生成代码",
+        "不用生成代码",
+        "不要实现代码",
+        "不实现代码",
+    ])
+
+
 def detect_entry_type(text: str) -> str:
     normalized = text.lower()
+    explicit_entry_types = [
+        "full-flow-with-code",
+        "design-from-code-with-reference",
+        "export-with-reference-style",
+        "strategy-from-reference",
+        "requirement-from-reference",
+        "task-plan-from-design",
+        "implement-from-plan",
+        "reference-doc-driven",
+        "strategy-from-code",
+        "design-from-code",
+        "requirement-only",
+        "codebase-only",
+        "quality-only",
+        "export-only",
+        "full-flow",
+    ]
+    for entry_type in explicit_entry_types:
+        if entry_type in normalized:
+            return entry_type
 
-    # 1. full-flow 强信号
-    if has_any(normalized, ["完整流程", "完整跑", "全流程", "从需求开始"]):
+    # 1. 全流程强信号；进一步区分是否要一路做到代码
+    if has_any(normalized, ["完整流程", "完整跑", "全流程", "从需求开始", "从需求一路", "端到端"]):
+        full_flow_to_code_keywords = [
+            "一路做到代码",
+            "跑到代码",
+            "做到代码",
+            "生成代码",
+            "写代码",
+            "实现代码",
+            "代码实现",
+            "编码实现",
+            "测试通过的代码",
+            "测试通过代码",
+            "写完代码",
+            "端到端实现",
+            "落地成代码",
+            "落地为代码",
+        ]
+        if has_any(normalized, full_flow_to_code_keywords) and not rejects_code_writing(normalized) and not has_any(
+            normalized, ["代码分析", "分析代码", "分析当前代码"]
+        ):
+            return "full-flow-with-code"
         return "full-flow"
 
     # 2. 参考文档驱动类（"参考"是强信号，前置判断避免被 export-only 截胡）
@@ -46,6 +102,15 @@ def detect_entry_type(text: str) -> str:
             return "export-with-reference-style"
         # 参考文档驱动（兜底）
         return "reference-doc-driven"
+
+    # 2.5 代码生成类（无参考、非全流程）：按任务计划/详细设计生成代码
+    if not rejects_code_writing(normalized) and has_any(normalized, [
+        "生成代码", "写代码", "实现代码", "代码实现", "编码实现", "编写代码", "写出代码",
+        "把代码写", "开发出来", "落地成代码", "落地为代码", "实现出来",
+        "按任务计划开发", "按任务计划实现", "按设计实现", "按设计开发",
+        "把功能实现", "把设计实现", "实现这个功能", "开发这个功能",
+    ]):
+        return "implement-from-plan"
 
     # 3. 代码驱动类（无参考文档，基于代码）
     # 3.1 codebase-only：宽松匹配"分析/看看/了解" + "代码/仓库/架构/实现"
