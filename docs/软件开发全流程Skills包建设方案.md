@@ -585,7 +585,7 @@ state/structured/codebase-analysis.json
 
 ### 目标
 
-在需求拆解和代码分析基础上，设计与现有系统兼容、改动范围合理、风险可控的软件实现方案。
+在需求拆解和代码分析基础上，形成基于用户指定本地代码目录的轻量实现路线设计。该阶段优先复用现有软件功能，选择最小合理改动路径，不替代编码后回填的权威详细设计。
 
 ### 主要 skill
 
@@ -600,16 +600,17 @@ state/structured/codebase-analysis.json
 - `knowledge/架构原则.md`
 - `knowledge/设计规范.md`
 - 参考文档画像，若用户要求按参考文档结构输出方案
+- 用户指定的本地代码目录；若尚未生成代码分析产物，应先运行 `codebase-analysis-reporter`
 
 ### 要完成的内容
 
-- 给出推荐方案。
+- 给出基于现有代码的推荐实现路线。
+- 说明现有能力复用项：模块、接口、数据结构、配置和测试资产。
 - 给出备选方案和放弃原因。
-- 明确系统边界和模块边界。
-- 设计新增或修改的模块。
-- 设计数据流、控制流、异常流。
-- 明确接口、事件、任务、数据库变更方向。
-- 明确对现有代码的最小改动路径。
+- 明确系统边界和模块边界，但不展开为函数/类/字段级详细设计。
+- 明确数据流、控制流、异常流方向。
+- 明确接口、事件、任务、数据库变更方向及兼容策略。
+- 明确对现有代码的最小改动路径和不改动范围。
 - 明确兼容性、迁移、回滚和测试策略。
 - 在代码驱动模式下，输出当前软件方案说明，重点描述当前架构、模块职责、数据流、控制流、外部依赖、风险和优化建议。
 
@@ -623,10 +624,12 @@ state/structured/solution-design.json
 ### 质量检查点
 
 - 是否优先复用现有代码。
+- 是否基于 `codebase-analysis.json` 和用户指定本地代码目录，而非 Agent 自行设计。
 - 是否解释为什么这是最优方案。
 - 是否说明被放弃方案和权衡。
 - 是否明确改动边界。
 - 是否覆盖迁移、回滚、测试和风险。
+- 是否避免写成函数级、类级、字段级详细设计。
 - 代码驱动模式下，是否避免把当前实现直接包装成最优方案；应区分当前设计、风险和可优化方向。
 
 ## 12. 阶段 6：软件详细设计
@@ -978,7 +981,7 @@ skill-name/
 1. `software-delivery-orchestrator`
 2. `requirement-decomposition-planner`（已落地，ASPICE SWE.1 风格软件需求拆解）
 3. `codebase-analysis-reporter`（现有代码分析，已落地，代码驱动模式的事实来源起点）
-4. `solution-architecture-designer`
+4. `solution-architecture-designer`（已落地，基于现有代码的轻量实现路线设计）
 5. `detailed-design-writer`
 6. `software-quality-gate`
 7. `reference-document-profiler`

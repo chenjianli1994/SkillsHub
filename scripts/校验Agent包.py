@@ -31,6 +31,7 @@ REQUIRED_SKILLS = {
     "requirement-document-exporter": ["templates", "scripts"],
     "requirement-quality-gate": ["templates"],
     "strategy-document-writer": ["templates", "scripts", "references"],
+    "solution-architecture-designer": ["templates", "scripts", "references"],
     "implementation-executor": ["templates", "scripts", "references"],
     "codebase-analysis-reporter": ["templates", "scripts", "references"],
 }
@@ -56,6 +57,11 @@ REQUIRED_FILES = [
     "skills/requirement-decomposition-planner/templates/需求拆解数据模板.json",
     "skills/requirement-decomposition-planner/references/ASPICE风格需求拆解规则.md",
     "skills/requirement-decomposition-planner/scripts/校验需求拆解.py",
+    "skills/solution-architecture-designer/SKILL.md",
+    "skills/solution-architecture-designer/templates/软件方案设计模板.md",
+    "skills/solution-architecture-designer/templates/方案设计数据模板.json",
+    "skills/solution-architecture-designer/references/代码先行方案设计规则.md",
+    "skills/solution-architecture-designer/scripts/校验方案设计.py",
     "skills/codebase-analysis-reporter/SKILL.md",
     "skills/codebase-analysis-reporter/templates/现有代码分析报告模板.md",
     "skills/codebase-analysis-reporter/templates/代码分析数据模板.json",
@@ -74,6 +80,7 @@ JSON_TEMPLATES = [
     "skills/reference-document-profiler/templates/参考文档画像模板.json",
     "skills/requirement-specification-writer/templates/需求规格书数据模板.json",
     "skills/requirement-decomposition-planner/templates/需求拆解数据模板.json",
+    "skills/solution-architecture-designer/templates/方案设计数据模板.json",
     "skills/implementation-executor/templates/实现记录模板.json",
     "skills/codebase-analysis-reporter/templates/代码分析数据模板.json",
 ]

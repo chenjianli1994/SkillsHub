@@ -52,6 +52,7 @@
 - 当用户明确要求直接执行某个阶段时，按阶段直达模式处理。
 - 当用户没有需求输入，但要求基于当前代码输出软件设计文档、详细设计文档或策略描述文档时，按代码驱动模式处理。
 - 代码驱动模式优先使用 `codebase-analysis-reporter` 分析当前代码，再调用 `solution-architecture-designer`、`detailed-design-writer` 或 `strategy-document-writer` 生成目标文档。
+- 软件方案设计阶段使用 `solution-architecture-designer`，必须基于用户指定本地代码目录的代码分析结果，优先复用现有软件功能并选择最小合理改动路径；不得脱离现有代码自行设计。
 - 代码驱动模式下必须区分“确定事实”“合理推断”“待确认项”，不得把代码推断直接写成确定业务规则。
 
 支持的入口类型：

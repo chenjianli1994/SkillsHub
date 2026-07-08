@@ -76,6 +76,7 @@ state/工作流状态.json
 
 - 需求类任务优先使用 `requirement-workflow-orchestrator`、`requirement-analysis-report`、`requirement-specification-writer`。
 - 需求拆解任务优先使用 `requirement-decomposition-planner`，按 ASPICE SWE.1 风格输出软件需求清单、CM 矩阵和 `requirement-breakdown.json`。
+- 软件方案设计任务优先使用 `solution-architecture-designer`，必须基于代码分析产物和指定本地代码目录，输出最小改动实现路线。
 - 策略文档任务优先使用 `strategy-document-writer`。
 - 参考文档驱动任务优先使用 `reference-document-profiler`。
 - 代码分析、方案设计、详细设计、任务计划等 skill 尚未建立时，不要假装已完成；在状态文件中记录阻塞项。
