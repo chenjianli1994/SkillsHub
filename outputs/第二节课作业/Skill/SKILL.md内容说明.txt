@@ -1,0 +1,10 @@
+SKILL.md 内容证据：
+
+- YAML name：my-skill
+- 正文名称：汽车软件需求工程 Skill
+- 复用源 Skill：requirement-analysis-report、requirement-specification-writer
+- 输入：raw_requirement、confirmation_answers、run_mode、allow_low_risk_assumptions
+- 输出：analysis/full 中文 Markdown、FR/DR/PR/NFR、验收标准、来源追踪
+- 规则：事实/推断/待确认区分；未确认 P0/P1 不定稿；不编造参数
+
+完整内容见同目录 SKILL.md，运行证据见 12_Skill运行验证.png。

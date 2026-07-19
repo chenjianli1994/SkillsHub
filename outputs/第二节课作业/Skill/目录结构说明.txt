@@ -1,0 +1,8 @@
+Skill/
+└── my-skill/
+    ├── SKILL.md
+    ├── assets/
+    ├── references/
+    └── examples/
+
+my-skill 一级目录严格仅包含以上四项。目录清单截图因浏览器文件 URL 安全策略不可用，使用本说明和 README 目录树作为本地证据。
